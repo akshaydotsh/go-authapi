@@ -2,6 +2,7 @@ package utils
 
 import (
 	"github.com/dgrijalva/jwt-go"
+	"github.com/labstack/echo"
 	"github.com/theakshaygupta/go-authapi/models"
 	"time"
 )
@@ -28,4 +29,15 @@ func CreateJWTToken(email, role, id string, isRefreshToken bool) (string, int64,
 		return "", 0, err
 	}
 	return token, claims.StandardClaims.ExpiresAt, nil
+}
+
+func GetFieldFromToken(field string, c echo.Context) (string, bool) {
+	user := c.Get("user")
+	token := user.(*jwt.Token)
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return "", false
+	}
+	return claims[field].(string), true
 }

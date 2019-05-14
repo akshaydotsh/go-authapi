@@ -11,15 +11,15 @@ import (
 	"time"
 )
 
-type UserHandler struct {
+type AuthHandler struct {
 	db dbo.DatabaseOps
 }
 
-func NewUserHandler(db dbo.DatabaseOps) UserHandler {
-	return UserHandler{db: db}
+func NewAuthHandler(db dbo.DatabaseOps) AuthHandler {
+	return AuthHandler{db: db}
 }
 
-func (h *UserHandler) Register(c echo.Context) error {
+func (h *AuthHandler) Register(c echo.Context) error {
 	// bind
 	user := &models.User{Id: bson.NewObjectId()}
 	err := c.Bind(user)
@@ -53,7 +53,7 @@ func (h *UserHandler) Register(c echo.Context) error {
 	return c.JSON(http.StatusCreated, models.HttpResponse{Message: "User Registered"})
 }
 
-func (h *UserHandler) Login(c echo.Context) error {
+func (h *AuthHandler) Login(c echo.Context) error {
 	// bind
 	user := &models.UserLoginCreds{}
 	if err := c.Bind(user); err != nil {
@@ -65,6 +65,7 @@ func (h *UserHandler) Login(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, models.HttpResponse{Message: "ValidationError", Error: err})
 	}
 
+	// find user
 	found, err := h.db.FindUser(bson.M{"email": user.Email, "password": user.Password, "role": user.Role})
 	if err != nil {
 		if err == mgo.ErrNotFound {
@@ -95,4 +96,34 @@ func (h *UserHandler) Login(c echo.Context) error {
 		RefreshTokenExpiresAt: refreshTokenExpiresAt,
 	})
 
+}
+
+func (h *AuthHandler) Refresh(c echo.Context) error {
+	email, ok := utils.GetFieldFromToken("email", c)
+	if !ok {
+		return c.JSON(http.StatusBadRequest, models.HttpResponse{Message: "Cannot identify accesstoken"})
+	}
+
+	// get the fckn user
+	user, err := h.db.FindUser(bson.M{"email": email})
+	if err != nil {
+		var status int
+		if err == mgo.ErrNotFound {
+			status = http.StatusBadRequest
+		} else {
+			status = http.StatusInternalServerError
+		}
+		return c.JSON(status, models.HttpResponse{Message: "Cannot refresh token", Error: err})
+	}
+
+	// give the mf some access token
+	accessToken, accessTokenExpiresAt, err := utils.CreateJWTToken(user.Email, user.Role, user.Id.Hex(), false)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, models.HttpResponse{Message: "Cannot refresh token", Error: err})
+	}
+	return c.JSON(http.StatusOK, models.HttpResponse{
+		Message:              "New access token created",
+		AccessToken:          accessToken,
+		AccessTokenExpiresAt: accessTokenExpiresAt,
+	})
 }
