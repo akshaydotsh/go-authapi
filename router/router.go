@@ -17,10 +17,16 @@ func RegisterRoutes(db dbo.DatabaseOps, e *echo.Echo) {
 	// root
 	e.GET("/", rootHandler)
 
-	// user routes
+	// auth routes
 	authHandler := handlers.NewAuthHandler(db)
 	authGroup := e.Group("auth")
 	authGroup.POST("/register", authHandler.Register)
 	authGroup.POST("/login", authHandler.Login)
 	authGroup.POST("/refresh", authHandler.Refresh, middlewares.AuthenticationMiddleware(), middlewares.AuthorizationMiddleware("refresh"))
+
+	// admin routes
+	adminHandler := handlers.NewAdminHandler(db)
+	adminGroup := e.Group("admin")
+	adminGroup.Use(middlewares.AuthenticationMiddleware(), middlewares.AuthorizationMiddleware("basicAdminPermissions"))
+	adminGroup.GET("/users", adminHandler.GetUsers)
 }

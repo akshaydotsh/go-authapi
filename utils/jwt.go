@@ -24,7 +24,7 @@ func CreateJWTToken(email, role, id string, isRefreshToken bool) (string, int64,
 	}
 
 	rawToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	token, err := rawToken.SignedString(models.JwtKey)
+	token, err := rawToken.SignedString(models.JWTSecret)
 	if err != nil {
 		return "", 0, err
 	}

@@ -1,8 +1,11 @@
 package models
 
-import "github.com/dgrijalva/jwt-go"
+import (
+	"github.com/dgrijalva/jwt-go"
+	"github.com/theakshaygupta/go-authapi/config"
+)
 
-var JwtKey = []byte("fuckyouandyouandyou")
+var JWTSecret = []byte(config.Config.JWTSecret)
 
 type JWTClaims struct {
 	Email string `json:"email"`

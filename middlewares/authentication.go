@@ -9,6 +9,6 @@ import (
 func AuthenticationMiddleware() echo.MiddlewareFunc {
 	return middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningMethod: "HS256",
-		SigningKey:    models.JwtKey,
+		SigningKey:    models.JWTSecret,
 	})
 }
